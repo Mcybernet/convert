@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Image to WebP Converter</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(-45deg, #000, #111, #9c9c9cff, #111);
+        background-size: 400% 400%;
+        animation: gradientMove 15s ease infinite;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+    }
+    @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .container {
+        background: #fff;
+        margin-inline: 20px;
+        margin-block: 50px;
+        padding: 50px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 900px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-upload {
+        width: 60%;
+        margin: auto;
+        display: flex;
+        justify-content: center;
+        background: #000;
+        color: #fff;
+        padding: 15px;
+        border: black solid 2px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s ease-in-out;
+    }
+    .btn-upload:hover { 
+        background: #fff; 
+        color: #000; 
+        transform: scale(1.01); 
+    }
+    input[type="file"] { display: none; }
+    .preview { margin: 20px 0; }
+    .preview img {
+        max-width: 100%;
+        border-radius: 8px;
+        margin: 15px 0;
+    }
+    .quality-box { margin: 20px 0; }
+    input[type="range"] {
+        width: 100%;
+        margin: 10px 0;
+        accent-color: black;
+    }
+    .quality-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 30px;
+    }
+    .quality-buttons button {
+        flex: 1;
+        padding: 20px;
+        border: black solid 2px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s ease-in-out;
+        background: #fff;
+    }
+    .quality-buttons button:hover {
+        background: #000;
+        color: #fff;
+        transform: scale(1.05); 
+    }
+    .convert-btn, .reset-link {
+        width: 100%;
+        padding: 20px;
+        border-radius: 8px;
+        font-size: medium;
+        cursor: pointer;
+        transition: 0.2s ease-in-out;
+        display: block;
+        margin-top: 15px;
+        text-decoration: none;
+        text-align: center;
+        font-weight: bold;
+    }
+    .convert-btn {
+        background: #000;
+        color: #fff;
+        border: black solid 2px;
+    }
+    .convert-btn:hover { 
+        background: #fff;
+        color: #000;
+        transform: scale(1.01); 
+    }
+    .reset-link {
+        background: red;
+        color: white;
+        border: red solid 2px;
+    }
+    .reset-link:hover {
+        background: #fff;
+        color: red;
+        transform: scale(1.01); 
+    }
+    .result-preview {
+        display: flex;
+        justify-content: space-around;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .card {
+        flex: 1;
+        background: #fafafa;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 8px;
+    }
+    .card img { max-width: 100%; border-radius: 6px; }
+    .info { margin: 10px 0; font-weight: bold; }
+    .btn-download {
+        display: block;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 12px;
+        background: black;
+        color: white;
+        text-decoration: none;
+        border: black solid 2px;
+        transition: 0.2s ease-in-out;
+    }
+    .btn-download:hover {
+        background: white;
+        color: black;
+        transform: scale(1.01); 
+    }
+</style>
+</head>
+<body>
+<div class="container" id="app">
+    <h2>Upload Image to Convert to WebP</h2>
+
+    <!-- STEP 1: Upload -->
+    <label for="fileInput" class="btn-upload">Upload Image</label>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="preview" id="preview" style="display:none;">
+        <h3>Preview Gambar</h3>
+        <img id="previewImg" src="" alt="Preview">
+        <div id="beforeSize"></div>
+    </div>
+
+    <!-- Quality Controls -->
+    <div class="quality-box" style="display:none;" id="qualityBox">
+        <label><b>Set Quality:</b></label><br>
+        <input type="range" min="10" max="100" value="75" id="qualitySlider">
+        <div><span id="sliderValue">75</span>%</div>
+        <div class="quality-buttons">
+            <button type="button" onclick="setQuality(20)">20</button>
+            <button type="button" onclick="setQuality(40)">40</button>
+            <button type="button" onclick="setQuality(60)">60</button>
+            <button type="button" onclick="setQuality(90)">90</button>
+        </div>
+        <button class="convert-btn" onclick="convertImage()">Convert</button>
+        <button href="#" class="reset-link" onclick="resetApp()">Re-upload</button>
+        <!-- <a href="#" class="reset-link" onclick="resetApp()">Re-upload</a> -->
+    </div>
+
+    <!-- Result -->
+    <div id="result" style="display:none;">
+        <h2>Convert Results</h2>
+        <div class="result-preview">
+            <div class="card">
+                <h3>Before</h3>
+                <img id="beforeImg">
+                <div class="info" id="beforeInfo"></div>
+            </div>
+            <div class="card">
+                <h3>After</h3>
+                <img id="afterImg">
+                <div class="info" id="afterInfo"></div>
+            </div>
+        </div>
+        <a id="downloadBtn" class="btn-download">Download WebP</a>
+    </div>
+</div>
+
+<script>
+let originalFile = null;
+
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+const previewImg = document.getElementById('previewImg');
+const beforeSize = document.getElementById('beforeSize');
+const qualityBox = document.getElementById('qualityBox');
+const qualitySlider = document.getElementById('qualitySlider');
+const sliderValue = document.getElementById('sliderValue');
+
+const result = document.getElementById('result');
+const beforeImg = document.getElementById('beforeImg');
+const afterImg = document.getElementById('afterImg');
+const beforeInfo = document.getElementById('beforeInfo');
+const afterInfo = document.getElementById('afterInfo');
+const downloadBtn = document.getElementById('downloadBtn');
+
+fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    originalFile = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+        previewImg.src = reader.result;
+        beforeSize.textContent = "Size: " + (file.size/1024).toFixed(2) + " KB";
+        preview.style.display = 'block';
+        qualityBox.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+});
+
+qualitySlider.addEventListener('input', () => {
+    sliderValue.textContent = qualitySlider.value;
+});
+
+function setQuality(val) {
+    qualitySlider.value = val;
+    sliderValue.textContent = val;
+}
+
+function convertImage() {
+    if (!originalFile) return;
+    const img = new Image();
+    img.src = URL.createObjectURL(originalFile);
+    img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const q = qualitySlider.value / 100;
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            // show result
+            result.style.display = 'block';
+            beforeImg.src = previewImg.src;
+            beforeInfo.textContent = "Size: " + (originalFile.size/1024).toFixed(2) + " KB";
+            afterImg.src = url;
+            afterInfo.textContent = "Size: " + (blob.size/1024).toFixed(2) + " KB";
+
+            // set download
+            const baseName = originalFile.name.split('.')[0];
+            const date = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+            const fileName = `webp_${qualitySlider.value}_${baseName}_${date}.webp`;
+            downloadBtn.href = url;
+            downloadBtn.download = fileName;
+        }, "image/webp", q);
+    };
+}
+
+function resetApp() {
+    window.location.reload();
+}
+</script>
+</body>
+</html>
