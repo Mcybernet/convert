@@ -197,11 +197,41 @@
     }
     .card {
         flex: 1;
-        background: #fafafa;
-        border: 1px solid #ddd;
+        /* border: 1px solid #ddd; */
         padding: 15px;
         border-radius: 8px;
+
+        perspective: 1200px;
+        position: relative;
+        overflow: visible;
     }
+
+    .card-inner {
+        transform-style: preserve-3d;
+        transition: transform 250ms cubic-bezier(.2,.9,.2,1), box-shadow 250ms;
+        will-change: transform, box-shadow;
+        background: #fafafa;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid rgba(0,0,0,0.06);
+        backface-visibility: hidden;
+    }
+
+    /* glare */
+    .card-glare {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        border-radius: 12px;
+        mix-blend-mode: screen;
+        opacity: 0;
+        transition: opacity 250ms;
+    }
+
+
     .card img { max-width: 100%; border-radius: 6px; }
     .info { margin: 10px 0; font-weight: bold; }
     .btn-download {
@@ -220,6 +250,27 @@
         color: black;
         transform: scale(1.01); 
     }
+
+
+    .value-compress{
+        background: linear-gradient(-45deg, #000, #ffffff, #9c9c9cff, #111);
+        background-size: 400% 400%;
+        animation: gradientMove_compress 10s ease infinite;
+
+
+        border-radius: 10px;
+        display: flex; 
+        justify-content: center;
+        font-size: 40px; 
+        margin-top: 10px;
+    }
+
+    @keyframes gradientMove_compress {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
 </style>
 </head>
 <body>
@@ -233,15 +284,24 @@
     <div class="preview" id="preview" style="display:none;">
         <h3>Preview Gambar</h3>
         <img id="previewImg" src="" alt="Preview">
-        <div id="beforeSize"></div>
+        <div style="font-weight: bold;" id="beforeSize"></div><br><br>
     </div>
 
     <!-- Quality Controls -->
-    <div class="quality-box" style="display:none;" id="qualityBox"><br>
-        <label><b>Set Compression Level:</b></label><br>
+    <div class="quality-box" style="display:none;" id="qualityBox">
+
         <div value="25" id="qualitySlider"></div>
-        <!-- <input > -->
-        <div ><span style="font-weight: bolder;" id="sliderValue" >25</span> %</div> <br><br>
+        <div style="font-weight: bold;">
+            <span>Set Compression Level:</span>
+            
+            <div class="value-compress">
+                <div  id="sliderValue" style="padding:20px 0px 20px 20px;" >25</div>
+                <div style="padding:20px 20px 20px 0px">%</div>
+            </div>
+            
+        </div>
+
+        <br><br><br>
         <div class="quality-buttons">
             <button type="button" onclick="setQuality(40)">Low</button>
             <button type="button" onclick="setQuality(60)">Medium</button>
@@ -262,15 +322,21 @@
         <br><br><br>
         <h2>Convert Results</h2>
         <div class="result-preview">
-            <div class="card">
-                <h3>Before</h3>
-                <img id="beforeImg">
-                <div class="info" id="beforeInfo"></div>
+            <div class="card ">
+                <div class="card-inner">
+                    <h3>Before</h3>
+                    <img id="beforeImg">
+                    <div class="info" id="beforeInfo"></div>
+                </div>
+                <div class="card-glare"></div>
             </div>
             <div class="card">
-                <h3>After</h3>
-                <img id="afterImg">
-                <div class="info" id="afterInfo"></div>
+                <div class="card-inner">
+                    <h3>After</h3>
+                    <img id="afterImg">
+                    <div class="info" id="afterInfo"></div>
+                </div>
+                <div class="card-glare"></div>
             </div>
         </div>
         <a id="downloadBtn" class="btn-download">Download WebP</a>
@@ -278,6 +344,52 @@
 </div>
 
 <script>
+document.querySelectorAll('.card').forEach(card => {
+  const inner = card.querySelector('.card-inner');
+  const glare = card.querySelector('.card-glare');
+
+  const sensitivity = 20; // semakin besar makin miring
+  const shadowStrength = 40; // semakin besar makin jauh shadow
+
+  function handleMove(e) {
+    const rect = card.getBoundingClientRect();
+    const mx = ((e.clientX || (e.touches && e.touches[0].clientX)) - rect.left) / rect.width - 0.5;
+    const my = ((e.clientY || (e.touches && e.touches[0].clientY)) - rect.top) / rect.height - 0.5;
+
+    const rotateY = mx * sensitivity * -1;
+    const rotateX = my * sensitivity;
+
+    inner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(8px)`;
+    card.classList.add('is-tilting');
+
+    // 🔹 Dynamic shadow (arah bayangan sesuai posisi cursor)
+    const shadowX = mx * shadowStrength;
+    const shadowY = my * shadowStrength;
+    inner.style.boxShadow = `${shadowX}px ${shadowY}px 30px rgba(0,0,0,0.25)`;
+
+    // 🔹 Glare
+    if (glare) {
+      const gx = mx * 100;
+      const gy = my * -100;
+      glare.style.background = `radial-gradient(circle at ${50 + gx}% ${50 + gy}%, rgba(255,255,255,0.35), rgba(255,255,255,0.05) 40%, rgba(255,255,255,0) 70%)`;
+    }
+  }
+
+  function reset() {
+    inner.style.transform = '';
+    inner.style.boxShadow = '0 8px 18px rgba(0,0,0,0.12)';
+    card.classList.remove('is-tilting');
+  }
+
+  card.addEventListener('mousemove', handleMove);
+  card.addEventListener('touchmove', handleMove, {passive:true});
+  card.addEventListener('mouseleave', reset);
+  card.addEventListener('touchend', reset);
+  card.addEventListener('touchcancel', reset);
+});
+
+
+
 let originalFile = null;
 
 const fileInput = document.getElementById('fileInput');
