@@ -271,6 +271,26 @@
         100% { background-position: 0% 50%; }
     }
 
+
+
+    .fullscreen-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.9);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .fullscreen-overlay img {
+        max-width: 95%;
+        max-height: 95%;
+        border-radius: 10px;
+        box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        cursor: zoom-out;
+    }
+
 </style>
 </head>
 <body>
@@ -322,7 +342,7 @@
         <br><br><br>
         <h2>Convert Results</h2>
         <div class="result-preview">
-            <div class="card ">
+            <div class="card">
                 <div class="card-inner">
                     <h3>Before</h3>
                     <img id="beforeImg">
@@ -341,9 +361,41 @@
         </div>
         <a id="downloadBtn" class="btn-download">Download WebP</a>
     </div>
+
+    <!-- 🔹 Fullscreen Overlay -->
+    <div id="fullscreenOverlay" class="fullscreen-overlay" onclick="closeFullscreen()">
+        <img id="fullscreenImg" src="" alt="Fullscreen Preview">
+    </div>
+
+
 </div>
 
 <script>
+
+function openFullscreen(src) {
+  const overlay = document.getElementById('fullscreenOverlay');
+  const fullscreenImg = document.getElementById('fullscreenImg');
+  fullscreenImg.src = src;
+  overlay.style.display = 'flex';
+}
+
+function closeFullscreen() {
+  document.getElementById('fullscreenOverlay').style.display = 'none';
+}
+
+// 🔹 aktifkan klik pada Before & After
+document.addEventListener("DOMContentLoaded", () => {
+  ["beforeImg", "afterImg"].forEach(id => {
+    const img = document.getElementById(id);
+    img.style.cursor = "zoom-in";
+    img.addEventListener("click", () => {
+      if (img.src) openFullscreen(img.src);
+    });
+  });
+});
+
+
+
 document.querySelectorAll('.card').forEach(card => {
   const inner = card.querySelector('.card-inner');
   const glare = card.querySelector('.card-glare');
